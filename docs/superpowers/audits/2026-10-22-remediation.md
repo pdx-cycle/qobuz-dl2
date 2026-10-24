@@ -69,21 +69,19 @@ in CI. Default limit 2 and 8 KiB output chunk size are retained.
 
 ## Qualification and remaining limits
 
-- A user-authorized live attempt after the initial remediation proved token
-  authentication and Studio membership succeed, but application-secret probing
-  reports failure. Current external source evidence identifies the underlying
-  service change: Qobuz retired `track/getFileUrl` around August 28, 2026 and the
-  web player moved to `/session/start` plus `/file/url` with segmented encrypted
-  CMAF. The existing direct-file transport cannot download from that protocol.
-  This supersedes the earlier assumption that live CDN behavior was merely
-  untested. The code now invalidates cached application credentials after browser
-  login and maps legacy-endpoint HTTP 410 to a specific actionable error instead
-  of claiming the valid login failed. Full replacement transport is not part of
-  this remediation.
+- A later user-authorized live check corrected the initial compatibility
+  conclusion. Token authentication, Studio membership, and the legacy
+  `track/getFileUrl` path all work. The apparent application-secret failure came
+  from a remediation regression: the fixed validation track returned HTTP 200
+  with `SampleRestrictedByRightHolders` and no URL, and `test_secret()` incorrectly
+  treated the missing URL as an invalid signature. Validation again accepts any
+  successful API response while HTTP 400 remains a rejected signature; requested
+  track availability is checked separately. Browser login preserves cached
+  application credentials instead of clearing them.
 
-- Local regression suite: 132 passed on Python 3.13.7, 3.14.6, and 3.15.0 using
-  cached runtime dependencies. Ruff and a cached mypy run targeting Python 3.13
-  pass. Python 3.9.18 compiles all 38 Python files; this is syntax evidence only.
+- Follow-up local regression suite: 138 passed on Python 3.14.6. Ruff, format,
+  and mypy checks pass. The original remediation also ran on Python 3.13.7 and
+  3.15.0; Python 3.9.18 compiled all 38 Python files as syntax evidence only.
 - Wheel and sdist build with cached Hatchling. Archive validation restricts source
   contents and rejects workspace logs/config/history/cache state. A fresh temporary
   wheel environment imports the installed package and exercises console help,
@@ -97,10 +95,12 @@ in CI. Default limit 2 and 8 KiB output chunk size are retained.
   remain outstanding. Python 3.9 syntax compilation is a separate local check.
   Added CI runs the lockfile on Python 3.9/3.14 across Linux/macOS/Windows; it has
   not run on the hosted service in this session.
-- Real download/CDN behavior is blocked by the retired endpoint; browser token
-  capture and Qobuz authentication were user-verified. FLAC metadata/nonempty data
-  checks do not prove every compressed frame decodes. JPEG/PNG/PDF checks are bounded
-  signature/end-marker checks, not full decoder validation.
+- A live request for the user's target album returned a signed quality-27 media
+  URL after selecting the valid application secret. A bounded CDN range request
+  returned HTTP 206, `audio/flac`, a content range, and the FLAC magic bytes; no
+  album was written to disk. FLAC metadata/nonempty data checks do not prove every
+  compressed frame decodes. JPEG/PNG/PDF checks are bounded signature/end-marker
+  checks, not full decoder validation.
 - Hard-link atomic publication requires filesystem support. Same-host advisory
   locks do not certify remote filesystem lock semantics. Stable lock files are
   retained deliberately; do not delete them while operations may be running.
@@ -166,13 +166,14 @@ RED→GREEN fixes.
 
 The user subsequently demonstrated a successful browser token capture and Studio
 authentication followed by `Can't find any valid app secret`. Root-cause tracing
-found two layers: authentication succeeded, while initialization immediately
-tested application secrets against Qobuz's retired direct-file endpoint. An
+initially found two layers: authentication succeeded, while initialization
+immediately tested application secrets against Qobuz's direct-file endpoint. An
 initial remediation also cleared `app_id`/`secrets` whenever browser login saved a
 new user token, incorrectly coupling unrelated credentials and exposing the
 stream failure again after a config rewrite. Follow-up regressions now preserve
 application credentials, stop initialization after successful authentication,
 defer secret selection until the first track-URL request, and state explicitly
-that a stream rejection does not invalidate the login token. This restores login
-and catalog access, but does not claim downloads work with Qobuz's replacement
-encrypted segmented transport.
+that a stream rejection does not invalidate the login token. A later live check
+showed the direct-file endpoint still works; the remaining failure was a false
+negative caused by requiring the unrelated validation track to return a URL even
+when Qobuz successfully validated the signature but rights-restricted that track.

@@ -2,12 +2,11 @@
 
 Search, explore, and download Lossless and Hi-Res music from [Qobuz](https://www.qobuz.com/).
 
-> **Current service compatibility (October 2026):** Token authentication and
-> catalog access still work, but Qobuz retired the legacy `track/getFileUrl`
-> endpoint used by this release. Downloads are therefore unavailable even after
-> a successful Studio login. Qobuz's replacement uses session-based segmented,
-> encrypted CMAF streaming and requires a new transport implementation. Resetting
-> the token or application secrets does not repair this service-side break.
+> **Current service compatibility (October 2026):** Token authentication,
+> catalog access, and the legacy `track/getFileUrl` download path are working in
+> a live Studio-account check. Secret validation treats an HTTP-success response
+> as proof of a valid signature even when the fixed probe track is unavailable or
+> rights-restricted; availability is checked again for each requested track.
 
 > **This is a community fork.** It is a modernized, async rewrite of the original
 > [`qobuz-dl` by vitiko98](https://github.com/vitiko98/qobuz-dl), which is no
@@ -93,8 +92,8 @@ any captcha — you do it, not a script). The window closes and your token is
 saved automatically. Existing application credentials are preserved; changing a
 user token does not prove that the web player's application credentials rotated.
 Requires the `[browser]` extra above. A successful login currently establishes
-authentication and catalog access; it does not restore the retired download
-endpoint described above.
+authentication and catalog access. Downloads also require at least one valid
+application secret, which the command preserves when updating the user token.
 
 ### Option B — paste it manually
 

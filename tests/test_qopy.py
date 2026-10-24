@@ -162,6 +162,32 @@ def test_nonjson_secret_rejection_tries_next_candidate():
     asyncio.run(run())
 
 
+def test_rights_restricted_probe_still_validates_secret():
+    import httpx
+
+    async def run():
+        c = Client("synthetic", "123", ["valid-secret"])
+        await c.aclose()
+        c.client = httpx.AsyncClient(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(
+                    200,
+                    json={
+                        "track_id": 5966783,
+                        "restrictions": [{"code": "SampleRestrictedByRightHolders"}],
+                    },
+                )
+            )
+        )
+        try:
+            await c.cfg_setup()
+            assert c.sec == "valid-secret"
+        finally:
+            await c.aclose()
+
+    asyncio.run(run())
+
+
 def test_retired_stream_endpoint_is_not_reported_as_invalid_secret():
     import httpx
 

@@ -269,8 +269,8 @@ class Client:
 
     async def test_secret(self, sec):
         try:
-            data = await self.api_call("track/getFileUrl", id=5966783, fmt_id=5, sec=sec)
-            return isinstance(data.get("url"), str) and bool(data["url"])
+            await self.api_call("track/getFileUrl", id=5966783, fmt_id=5, sec=sec)
+            return True
         except InvalidAppSecretError:
             return False
 
