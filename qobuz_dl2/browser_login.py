@@ -14,7 +14,9 @@ Playwright is an optional dependency, installed via the ``browser`` extra
 """
 
 import logging
+import time
 from typing import Optional
+from urllib.parse import urlsplit
 
 LOGIN_URL = "https://play.qobuz.com/login"
 _INSTALL_HINT = (
@@ -41,15 +43,27 @@ def fetch_token_via_browser(timeout: int = 300) -> Optional[str]:
     except ImportError as e:
         raise RuntimeError(_INSTALL_HINT) from e
 
+    if not isinstance(timeout, int) or timeout <= 0:
+        raise ValueError("Timeout must be positive")
     captured: dict = {}
 
     def _on_response(response) -> None:
         try:
-            if "user/login" in response.url and response.request.method == "POST":
+            url = urlsplit(response.url)
+            if (
+                url.scheme == "https"
+                and url.hostname == "www.qobuz.com"
+                and url.port in (None, 443)
+                and not url.username
+                and not url.password
+                and url.path.rstrip("/") == "/api.json/0.2/user/login"
+                and response.request.method == "POST"
+                and 200 <= response.status < 300
+            ):
                 data = response.json()
-                token = data.get("user_auth_token")
-                if token:
-                    captured["token"] = token
+                token = data.get("user_auth_token") if isinstance(data, dict) else None
+                if isinstance(token, str) and token.strip():
+                    captured["token"] = token.strip()
         except Exception:  # pragma: no cover - response bodies vary
             pass
 
@@ -58,29 +72,23 @@ def fetch_token_via_browser(timeout: int = 300) -> Optional[str]:
             try:
                 browser = p.chromium.launch(headless=False)
             except PlaywrightError as e:
-                raise RuntimeError(
-                    f"Could not launch a browser. {_INSTALL_HINT}\n\n({e})"
-                ) from e
-            context = browser.new_context()
-            page = context.new_page()
-            page.on("response", _on_response)
-            page.goto(LOGIN_URL)
-
-            # Poll until we capture the token, the user closes the window, or we
-            # hit the timeout. page operations raise once the window is gone.
-            elapsed_ms = 0
-            step_ms = 500
-            while "token" not in captured and elapsed_ms < timeout * 1000:
-                try:
-                    page.wait_for_timeout(step_ms)
-                except PlaywrightError:
-                    break  # window closed
-                elapsed_ms += step_ms
-
+                raise RuntimeError(f"Could not launch a browser. {_INSTALL_HINT}\n\n({e})") from e
             try:
-                browser.close()
-            except PlaywrightError:
-                pass
+                context = browser.new_context()
+                page = context.new_page()
+                page.on("response", _on_response)
+                deadline = time.monotonic() + timeout
+                page.goto(LOGIN_URL, timeout=timeout * 1000)
+                while "token" not in captured and time.monotonic() < deadline:
+                    try:
+                        page.wait_for_timeout(min(500, max(1, int((deadline - time.monotonic()) * 1000))))
+                    except PlaywrightError:
+                        break
+            finally:
+                try:
+                    browser.close()
+                except PlaywrightError:
+                    pass
     except RuntimeError:
         raise
     except Exception as e:  # pragma: no cover - environment specific

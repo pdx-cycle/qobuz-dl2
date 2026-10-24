@@ -58,7 +58,7 @@ def _format_genres(genres: list) -> str:
     >>> _format_genres(g)
     'Pop, Rock, Alternatif et Indé'
     """
-    genres = re.findall(r"([^\u2192\/]+)", "/".join(genres))
+    genres = re.findall(r"([^\u2192\/]+)", "/".join(genres or []))
     no_repeats: list[str] = []
     for g in genres:
         if g not in no_repeats:
@@ -66,63 +66,42 @@ def _format_genres(genres: list) -> str:
     return ", ".join(no_repeats)
 
 
-def _embed_flac_img(root_dir, audio: FLAC):
-    emb_image = os.path.join(root_dir, "cover.jpg")
-    multi_emb_image = os.path.join(
-        os.path.abspath(os.path.join(root_dir, os.pardir)), "cover.jpg"
-    )
-    if os.path.isfile(emb_image):
-        cover_image = emb_image
-    else:
-        cover_image = multi_emb_image
-
-    try:
-        # rest of the metadata still gets embedded
-        # when the image size is too big
-        if os.path.getsize(cover_image) > FLAC_MAX_BLOCKSIZE:
-            raise Exception(
-                "downloaded cover size too large to embed. "
-                "turn off `og_cover` to avoid error"
-            )
-
-        image = Picture()
-        image.type = 3
-        image.mime = "image/jpeg"
-        image.desc = "cover"
-        with open(cover_image, "rb") as img:
-            image.data = img.read()
-        audio.add_picture(image)
-    except Exception as e:
-        logger.error(f"Error embedding image: {e}", exc_info=True)
+def _embed_flac_img(cover_path, audio: FLAC):
+    if not cover_path:
+        raise ValueError("Completed cover required for embedding")
+    if os.path.getsize(cover_path) > FLAC_MAX_BLOCKSIZE:
+        raise ValueError("Cover too large for FLAC metadata")
+    image = Picture()
+    image.type = 3
+    image.desc = "cover"
+    with open(cover_path, "rb") as stream:
+        image.data = stream.read()
+    image.mime = "image/png" if image.data.startswith(b"\x89PNG") else "image/jpeg"
+    other_pictures = [picture for picture in audio.pictures if picture.type != 3]
+    audio.clear_pictures()
+    for picture in other_pictures:
+        audio.add_picture(picture)
+    audio.add_picture(image)
 
 
-def _embed_id3_img(root_dir, audio: id3.ID3):
-    emb_image = os.path.join(root_dir, "cover.jpg")
-    multi_emb_image = os.path.join(
-        os.path.abspath(os.path.join(root_dir, os.pardir)), "cover.jpg"
-    )
-    if os.path.isfile(emb_image):
-        cover_image = emb_image
-    else:
-        cover_image = multi_emb_image
-
-    with open(cover_image, "rb") as cover:
-        APIC = getattr(id3, "APIC")
-        audio.add(
-            APIC(
-                encoding=3,
-                mime="image/jpeg",
-                type=3,
-                desc="",
-                data=cover.read(),
-            )
+def _embed_id3_img(cover_path, audio: id3.ID3):
+    if not cover_path:
+        raise ValueError("Completed cover required for embedding")
+    with open(cover_path, "rb") as stream:
+        data = stream.read()
+    other_pictures = [picture for picture in audio.getall("APIC") if picture.type != 3]
+    audio.delall("APIC")
+    for picture in other_pictures:
+        audio.add(picture)
+    audio.add(
+        id3.APIC(
+            encoding=3, mime="image/png" if data.startswith(b"\x89PNG") else "image/jpeg", type=3, desc="", data=data
         )
+    )
 
 
 # Use KeyError catching instead of dict.get to avoid empty tags
-def tag_flac(
-    filename, root_dir, final_name, d: dict, album, istrack=True, em_image=False
-):
+def tag_flac(filename, root_dir, final_name, d: dict, album, istrack=True, em_image=False, cover_path=None):
     """
     Tag a FLAC file
 
@@ -143,18 +122,17 @@ def tag_flac(
     if "Disc " in final_name:
         audio["DISCNUMBER"] = str(d["media_number"])
 
-    try:
-        audio["COMPOSER"] = d["composer"]["name"]  # COMPOSER
-    except KeyError:
-        pass
+    composer = (d.get("composer") or {}).get("name")
+    if composer:
+        audio["COMPOSER"] = composer
 
-    artist_ = d.get("performer", {}).get("name")  # TRACK ARTIST
+    artist_ = (d.get("performer") or {}).get("name")  # TRACK ARTIST
     if istrack:
         audio["ARTIST"] = artist_ or d["album"]["artist"]["name"]  # TRACK ARTIST
     else:
         audio["ARTIST"] = artist_ or album["artist"]["name"]
 
-    audio["LABEL"] = album.get("label", {}).get("name", "n/a")
+    audio["LABEL"] = (album.get("label") or {}).get("name", "n/a")
 
     if istrack:
         audio["GENRE"] = _format_genres(d["album"]["genres_list"])
@@ -172,13 +150,12 @@ def tag_flac(
         audio["COPYRIGHT"] = _format_copyright(album.get("copyright") or "n/a")
 
     if em_image:
-        _embed_flac_img(root_dir, audio)
+        _embed_flac_img(cover_path, audio)
 
     audio.save()
-    os.rename(filename, final_name)
 
 
-def tag_mp3(filename, root_dir, final_name, d, album, istrack=True, em_image=False):
+def tag_mp3(filename, root_dir, final_name, d, album, istrack=True, em_image=False, cover_path=None):
     """
     Tag an mp3 file
 
@@ -199,11 +176,13 @@ def tag_mp3(filename, root_dir, final_name, d, album, istrack=True, em_image=Fal
     tags = dict()
     tags["title"] = _get_title(d)
     try:
-        tags["label"] = album["label"]["name"]
+        label = (album.get("label") or {}).get("name")
+        if label:
+            tags["label"] = label
     except KeyError:
         pass
 
-    artist_ = d.get("performer", {}).get("name")  # TRACK ARTIST
+    artist_ = (d.get("performer") or {}).get("name")  # TRACK ARTIST
     if istrack:
         tags["artist"] = artist_ or d["album"]["artist"]["name"]  # TRACK ARTIST
     else:
@@ -228,7 +207,7 @@ def tag_mp3(filename, root_dir, final_name, d, album, istrack=True, em_image=Fal
 
     TRCK = getattr(id3, "TRCK")
     TPOS = getattr(id3, "TPOS")
-    audio["TRCK"] = TRCK(encoding=3, text=f'{d["track_number"]}/{tracktotal}')
+    audio["TRCK"] = TRCK(encoding=3, text=f"{d['track_number']}/{tracktotal}")
     audio["TPOS"] = TPOS(encoding=3, text=str(d["media_number"]))
 
     # write metadata in `tags` to file
@@ -238,7 +217,6 @@ def tag_mp3(filename, root_dir, final_name, d, album, istrack=True, em_image=Fal
         audio[frame_name] = frame_cls(encoding=3, text=v)
 
     if em_image:
-        _embed_id3_img(root_dir, audio)
+        _embed_id3_img(cover_path, audio)
 
     audio.save(filename, v2_version=3)
-    os.rename(filename, final_name)

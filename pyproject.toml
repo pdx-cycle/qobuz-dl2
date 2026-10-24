@@ -5,6 +5,13 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["qobuz_dl2"]
 
+[tool.hatch.build.targets.sdist]
+include = [
+  "/qobuz_dl2", "/tests", "/scripts", "/benchmarks",
+  "/.github/workflows/ci.yml", "/README.md", "/LICENSE", "/pyproject.toml", "/uv.lock",
+]
+exclude = ["**/__pycache__", "**/*.pyc", "**/*.log", "**/*.db", "**/*.tmp"]
+
 [project]
 name = "qobuz-dl2"
 version = "2.0.0"

@@ -28,3 +28,32 @@ def test_seed_timezone_regex_matches():
     assert m is not None
     assert m.group("seed") == "c2VlZHZhbHVl"
     assert m.group("timezone") == "berlin"
+
+
+def test_incomplete_secrets_are_rejected():
+    import pytest
+
+    from qobuz_dl2.bundle import Bundle
+
+    b = Bundle.__new__(Bundle)
+    b._bundle = (
+        'a.initialSeed("c2VlZHZhbHVl",window.utimezone.berlin);b.initialSeed("c2VlZHZhbHVl",window.utimezone.paris)'
+    )
+    with pytest.raises(NotImplementedError):
+        b.get_secrets()
+
+
+def test_full_valid_bundle_extracts_secrets():
+    import base64
+
+    from qobuz_dl2.bundle import Bundle
+
+    pieces = []
+    for zone in ["berlin", "paris"]:
+        encoded = base64.b64encode(("secret-" + zone).encode()).decode() + "Z" * 44
+        pieces.append(
+            f'a.initialSeed("{encoded[:8]}",window.utimezone.{zone});name:"X/{zone.capitalize()}",info:"{encoded[8:12]}",extras:"{encoded[12:]}"'
+        )
+    b = Bundle.__new__(Bundle)
+    b._bundle = ";".join(pieces)
+    assert dict(b.get_secrets()) == {"paris": "secret-paris", "berlin": "secret-berlin"}

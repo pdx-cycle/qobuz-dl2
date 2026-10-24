@@ -2,6 +2,13 @@
 
 Search, explore, and download Lossless and Hi-Res music from [Qobuz](https://www.qobuz.com/).
 
+> **Current service compatibility (October 2026):** Token authentication and
+> catalog access still work, but Qobuz retired the legacy `track/getFileUrl`
+> endpoint used by this release. Downloads are therefore unavailable even after
+> a successful Studio login. Qobuz's replacement uses session-based segmented,
+> encrypted CMAF streaming and requires a new transport implementation. Resetting
+> the token or application secrets does not repair this service-side break.
+
 > **This is a community fork.** It is a modernized, async rewrite of the original
 > [`qobuz-dl` by vitiko98](https://github.com/vitiko98/qobuz-dl), which is no
 > longer maintained. All credit for the original tool, the Qobuz API wrapper
@@ -67,8 +74,9 @@ uv tool install --force ".[browser]"
 python -m playwright install chromium   # one-time browser download
 ```
 
-On first run the tool creates a config file and asks for your token. You can
-leave it blank and capture it automatically afterward with `qobuz-dl2 login`.
+Start with `qobuz-dl2 login` or `qobuz-dl2 set-token`. Help never creates settings
+or contacts Qobuz. Downloads create default settings if needed and give a token
+setup message when authentication has not been configured.
 
 ## Getting your token
 
@@ -82,7 +90,11 @@ qobuz-dl2 login
 
 A browser window opens. **Log in to Qobuz normally** (type your password, solve
 any captcha — you do it, not a script). The window closes and your token is
-saved automatically. Requires the `[browser]` extra above.
+saved automatically. Existing application credentials are preserved; changing a
+user token does not prove that the web player's application credentials rotated.
+Requires the `[browser]` extra above. A successful login currently establishes
+authentication and catalog access; it does not restore the retired download
+endpoint described above.
 
 ### Option B — paste it manually
 
@@ -93,10 +105,11 @@ saved automatically. Requires the `[browser]` extra above.
 5. Store it:
 
    ```bash
-   qobuz-dl2 set-token "PASTE_TOKEN_HERE"
+   qobuz-dl2 set-token
    ```
 
-If your token ever fully expires, the tool tells you exactly what to do; just
+The prompt hides your token. `set-token --stdin` also accepts standard input;
+the historical positional argument remains supported. If your token expires,
 re-run `qobuz-dl2 login` (or `set-token`).
 
 ## Usage
@@ -126,7 +139,16 @@ qobuz-dl2 lucky "miles davis kind of blue"
 
 ```bash
 qobuz-dl2 dl -q 27 <url>          # request best Hi-Res
-qobuz-dl2 dl --no-fallback -q 27  # skip releases not available at that quality
+qobuz-dl2 dl --no-fallback -q 27 <url>  # skip tracks unavailable at that quality
+```
+
+### Download concurrency
+
+The default is conservative: up to two tracks download at the same time. If
+large Hi-Res streams are being closed by the server, try one at a time:
+
+```bash
+qobuz-dl2 dl --download-limit 1 -q 27 <url>
 ```
 
 Run `qobuz-dl2 <command> --help` for the full option list (directory, naming
@@ -139,18 +161,61 @@ Config lives at:
 - Linux/macOS: `~/.config/qobuz-dl/config.ini`
 - Windows: `%APPDATA%\qobuz-dl\config.ini`
 
-`qobuz-dl2 -r` recreates it, `qobuz-dl2 -sc` prints it, and `qobuz-dl2 -p` purges the
-downloaded-IDs database. Your `user_auth_token` is stored (in the historical
-`password` field) **in plain text** — protect this file accordingly.
+`qobuz-dl2 -r` recreates it, `qobuz-dl2 -sc` prints a redacted copy, and
+`qobuz-dl2 -p` purges download history. These commands work without a subcommand.
+Saved true flags remain effective when omitted on the command line. Config writes
+are atomic and serialized; new config files use mode 0600 on POSIX. Your token is
+stored in the historical `password` field in plain text.
+
+### Completion, reuse, and recovery
+
+Downloads stage, validate, and tag audio before atomically publishing it. A failed
+track makes the command exit nonzero while successful sibling tracks survive.
+Policy exclusions are skips; Ctrl-C exits 130 after owned writers settle. An atomic
+commit already in progress may finish before cancellation returns.
+
+History records destination, source identity, physical quality, tags/artwork
+requirements, and file digest. Legacy ID rows alone never suppress a download.
+The first additive history migration retains a `.pre-artifacts-v1.bak` database.
+Retries reuse verified survivors and fetch missing members. Unknown/conflicting
+audio at a requested filename is preserved and reported as a collision. Known
+audio replaced for corruption, quality, or tagging changes retains its original
+bytes in a `.previous-<uuid>` file. These backups are not removed automatically.
+
+Requested embedding waits for validated artwork. `--no-cover --embed-art` fetches
+art transiently for embedding without retaining a new cover. Cover cache sidecars
+store source hashes and payload digests, never signed URLs or tokens. MP3 checks
+include frame boundaries and expected duration; FLAC checks metadata and nonempty
+frame data, without decoding every frame. Publication requires a filesystem that
+supports hard links; unsupported filesystems report failure while preserving files.
+
+Collection pages are consumed fully. M3U entries follow source order, retain
+repeats, and reference actual final paths. One reusable download pool and shared
+transfer budget cover tracks and artwork. Each bounded scheduling layer queues at
+most twice its worker limit; nested album queues use O(limit²) pending metadata.
+GET retries allow at most three attempts for transient errors/statuses; login POST
+is not automatically replayed. The default concurrency remains 2.
 
 ## Development
 
 ```bash
-uv sync                 # install dev dependencies
-uv run pytest           # run the test suite
-uv run ruff check .     # lint
-uv run mypy qobuz_dl2   # type-check
+uv sync --frozen
+uv run --frozen pytest -q
+uv run --frozen ruff check qobuz_dl2 tests scripts benchmarks
+uv run --frozen mypy qobuz_dl2
+uv build
+uv run --frozen python scripts/verify_distributions.py dist
+uv run --isolated --no-project --with ./dist/qobuz_dl2-2.0.0-py3-none-any.whl python scripts/smoke_installed.py tests/fixtures/tone.mp3
+uv run --frozen python benchmarks/download_pipeline.py --runs 5 --large-collection --output benchmark.json
 ```
+
+Tests forbid real HTTP transports and isolate config/history. The wheel smoke
+uses synthetic token handling and mock HTTP with real audio tagging/publication.
+CI covers Python 3.9/3.14 on Linux, macOS, and Windows. Benchmark medians compare
+limits 1/2/4 with generated audio, chunk delays, slow tagging, and fatal responses;
+they are synthetic measurements, with no wall-clock pass threshold or CDN claim.
+See the [audit follow-up](docs/superpowers/audits/2026-10-22-remediation.md) for
+finding coverage, measured results, and outstanding environment qualification.
 
 ## What changed in this fork (v2.0.0)
 

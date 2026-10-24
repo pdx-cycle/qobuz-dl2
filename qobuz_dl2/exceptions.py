@@ -20,3 +20,11 @@ class InvalidQuality(Exception):
 
 class NonStreamable(Exception):
     pass
+
+
+class ResponseError(ValueError):
+    """A service returned a response that cannot satisfy the requested contract."""
+
+
+class StreamingEndpointRetiredError(RuntimeError):
+    """Qobuz accepted authentication but retired this client's stream endpoint."""

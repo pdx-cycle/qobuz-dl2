@@ -1,6 +1,4 @@
 import asyncio
-import configparser
-import glob
 import logging
 import os
 import sys
@@ -8,19 +6,23 @@ from typing import Any, Awaitable, Callable, Dict, Optional
 
 import click
 
+from qobuz_dl2 import config as config_store
 from qobuz_dl2.bundle import Bundle
 from qobuz_dl2.color import GREEN, RED, RESET, YELLOW
 from qobuz_dl2.core import QobuzDL
-from qobuz_dl2.downloader import DEFAULT_FOLDER, DEFAULT_TRACK
+from qobuz_dl2.downloader import DEFAULT_DOWNLOAD_LIMIT as DEFAULT_DOWNLOAD_LIMIT
+from qobuz_dl2.downloader import DEFAULT_FOLDER as DEFAULT_FOLDER
+from qobuz_dl2.downloader import DEFAULT_TRACK as DEFAULT_TRACK
 from qobuz_dl2.exceptions import (
     AuthenticationError,
     IneligibleError,
     InvalidAppSecretError,
 )
+from qobuz_dl2.results import BatchResult
 
 # Reset styling at the end of every line so colors don't bleed (colorama's old
 # autoreset behavior, reproduced without the dependency).
-logging.basicConfig(level=logging.INFO, format=f"%(message)s{RESET}")
+
 
 if os.name == "nt":
     # Ensure a valid string path even if APPDATA is unset
@@ -49,122 +51,41 @@ TOKEN_PROMPT = (
 
 
 def _reset_config(config_file: str) -> None:
-    logging.info(f"{YELLOW}Creating config file: {config_file}")
-    config = configparser.ConfigParser()
-    config["DEFAULT"]["email"] = input("Enter your email (optional, for reference):\n- ")
-    # The token is stored verbatim in the historical "password" field so existing
-    # config files keep working. It must NOT be hashed.
-    config["DEFAULT"]["password"] = input(TOKEN_PROMPT).strip()
-    config["DEFAULT"]["default_folder"] = (
-        input("Folder for downloads (leave empty for default 'Qobuz Downloads')\n- ")
-        or "Qobuz Downloads"
-    )
-    config["DEFAULT"]["default_quality"] = (
-        input(
-            "Download quality (5, 6, 7, 27) "
-            "[320, LOSSLESS, 24B <96KHZ, 24B >96KHZ]"
-            "\n(leave empty for default '6')\n- "
-        )
-        or "6"
-    )
-    config["DEFAULT"]["default_limit"] = "20"
-    config["DEFAULT"]["no_m3u"] = "false"
-    config["DEFAULT"]["albums_only"] = "false"
-    config["DEFAULT"]["no_fallback"] = "false"
-    config["DEFAULT"]["og_cover"] = "false"
-    config["DEFAULT"]["embed_art"] = "false"
-    config["DEFAULT"]["no_cover"] = "false"
-    config["DEFAULT"]["no_database"] = "false"
-    logging.info(f"{YELLOW}Getting tokens. Please wait...")
-    bundle = Bundle()
-    config["DEFAULT"]["app_id"] = str(bundle.get_app_id())
-    config["DEFAULT"]["secrets"] = ",".join(bundle.get_secrets().values())
-    config["DEFAULT"]["folder_format"] = DEFAULT_FOLDER
-    config["DEFAULT"]["track_format"] = DEFAULT_TRACK
-    config["DEFAULT"]["smart_discography"] = "false"
-    os.makedirs(os.path.dirname(config_file), exist_ok=True)
-    with open(config_file, "w") as configfile:
-        config.write(configfile)
-    logging.info(
-        f"{GREEN}Config file updated. Edit more options in {config_file}"
-        "\nso you don't have to call custom flags every time you run "
-        "a qobuz-dl2 command."
-    )
+    cfg = config_store.default_config()
+    cfg["DEFAULT"]["email"] = click.prompt("Email (optional)", default="", show_default=False)
+    cfg["DEFAULT"]["password"] = click.prompt(
+        "Qobuz token (leave blank to use login later)", default="", hide_input=True, show_default=False
+    ).strip()
+    cfg["DEFAULT"]["default_folder"] = click.prompt("Download directory", default="Qobuz Downloads")
+    cfg["DEFAULT"]["default_quality"] = click.prompt("Quality", default="6", type=click.Choice(["5", "6", "7", "27"]))
+    os.makedirs(os.path.dirname(config_file), exist_ok=True, mode=0o700)
+    from qobuz_dl2.storage import file_lock
+
+    with file_lock(config_file + ".lock"):
+        config_store.write_config_atomic(config_file, cfg)
+    click.echo(f"Configuration saved to {config_file}")
 
 
 def _save_token(token: str) -> None:
-    """Persist a refreshed user_auth_token back to the config file."""
-    cfg = configparser.ConfigParser()
-    cfg.read(CONFIG_FILE)
-    cfg["DEFAULT"]["password"] = token
-    with open(CONFIG_FILE, "w") as f:
-        cfg.write(f)
+    config_store.update_token(CONFIG_FILE, token)
+
+
+def _save_browser_token(token: str) -> None:
+    config_store.update_token(CONFIG_FILE, token)
 
 
 def _remove_leftovers(directory: str) -> None:
-    directory = os.path.join(directory, "**", ".*.tmp")
-    for i in glob.glob(directory, recursive=True):
-        try:
-            os.remove(i)
-        except Exception:
-            pass
+    # Kept for library compatibility; cleanup belongs to each staging owner.
+    return None
 
 
 def _ensure_config_exists() -> None:
-    if not os.path.isdir(CONFIG_PATH) or not os.path.isfile(CONFIG_FILE):
-        os.makedirs(CONFIG_PATH, exist_ok=True)
-        _reset_config(CONFIG_FILE)
+    if not os.path.exists(CONFIG_FILE):
+        config_store.update_config(CONFIG_FILE, {})
 
 
 def _load_config() -> Dict[str, Any]:
-    cfg = configparser.ConfigParser()
-    cfg.read(CONFIG_FILE)
-    try:
-        email = cfg["DEFAULT"].get("email", "")
-        password = cfg["DEFAULT"]["password"]
-        default_folder = cfg["DEFAULT"]["default_folder"]
-        default_limit = cfg["DEFAULT"]["default_limit"]
-        default_quality = cfg["DEFAULT"]["default_quality"]
-        no_m3u = cfg.getboolean("DEFAULT", "no_m3u")
-        albums_only = cfg.getboolean("DEFAULT", "albums_only")
-        no_fallback = cfg.getboolean("DEFAULT", "no_fallback")
-        og_cover = cfg.getboolean("DEFAULT", "og_cover")
-        embed_art = cfg.getboolean("DEFAULT", "embed_art")
-        no_cover = cfg.getboolean("DEFAULT", "no_cover")
-        no_database = cfg.getboolean("DEFAULT", "no_database")
-        app_id = cfg["DEFAULT"]["app_id"]
-        smart_discography = cfg.getboolean("DEFAULT", "smart_discography")
-        folder_format = cfg["DEFAULT"]["folder_format"]
-        track_format = cfg["DEFAULT"]["track_format"]
-        secrets = [s for s in cfg["DEFAULT"]["secrets"].split(",") if s]
-    except (KeyError, UnicodeDecodeError, configparser.Error) as error:
-        raise RuntimeError(
-            f"{RED}Your config file is corrupted: {error}! "
-            "Run 'qobuz-dl2 -r' to fix this."
-        )
-    return {
-        "email": email,
-        "password": password,
-        "app_id": app_id,
-        "secrets": secrets,
-        "defaults": {
-            "default_folder": default_folder,
-            "default_limit": int(default_limit) if str(default_limit).isdigit() else 20,
-            "default_quality": (
-                int(default_quality) if str(default_quality).isdigit() else 6
-            ),
-            "no_m3u": no_m3u,
-            "albums_only": albums_only,
-            "no_fallback": no_fallback,
-            "og_cover": og_cover,
-            "embed_art": embed_art,
-            "no_cover": no_cover,
-            "no_database": no_database,
-            "folder_format": folder_format,
-            "track_format": track_format,
-            "smart_discography": smart_discography,
-        },
-    }
+    return config_store.load_settings(CONFIG_FILE)
 
 
 async def _build_qobuz(
@@ -182,39 +103,44 @@ async def _build_qobuz(
     folder_format: Optional[str] = None,
     track_format: Optional[str] = None,
     smart_discography: Optional[bool] = None,
+    download_limit: Optional[int] = None,
 ) -> QobuzDL:
     cfg = ctx.obj
     dflt = cfg["defaults"]
-    effective = {
+    effective: Dict[str, Any] = {
         "directory": directory or dflt["default_folder"],
         "quality": int(quality if quality is not None else dflt["default_quality"]),
         "embed_art": bool(embed_art if embed_art is not None else dflt["embed_art"]),
-        "ignore_singles_eps": bool(
-            albums_only if albums_only is not None else dflt["albums_only"]
-        ),
+        "ignore_singles_eps": bool(albums_only if albums_only is not None else dflt["albums_only"]),
         "no_m3u_for_playlists": bool(no_m3u if no_m3u is not None else dflt["no_m3u"]),
-        "quality_fallback": not (
-            no_fallback if no_fallback is not None else dflt["no_fallback"]
-        ),
-        "cover_og_quality": bool(
-            og_cover if og_cover is not None else dflt["og_cover"]
-        ),
+        "quality_fallback": not (no_fallback if no_fallback is not None else dflt["no_fallback"]),
+        "cover_og_quality": bool(og_cover if og_cover is not None else dflt["og_cover"]),
         "no_cover": bool(no_cover if no_cover is not None else dflt["no_cover"]),
-        "downloads_db": (
-            None if (no_db if no_db is not None else dflt["no_database"]) else QOBUZ_DB
-        ),
+        "downloads_db": (None if (no_db if no_db is not None else dflt["no_database"]) else QOBUZ_DB),
         "folder_format": folder_format or dflt["folder_format"],
         "track_format": track_format or dflt["track_format"],
-        "smart_discography": bool(
-            smart_discography
-            if smart_discography is not None
-            else dflt["smart_discography"]
+        "smart_discography": bool(smart_discography if smart_discography is not None else dflt["smart_discography"]),
+        "download_limit": max(
+            1,
+            int(download_limit if download_limit is not None else dflt["download_limit"]),
         ),
     }
+    config_store.validate_pattern(effective["folder_format"])
+    config_store.validate_pattern(effective["track_format"], True)
+    effective["directory"] = os.path.expanduser(effective["directory"])
+    if not cfg["password"]:
+        raise AuthenticationError("No token configured. Run qobuz-dl2 login or qobuz-dl2 set-token.")
+    if not cfg["app_id"] or not cfg["secrets"]:
+        bundle = await asyncio.get_running_loop().run_in_executor(None, Bundle)
+        cfg["app_id"] = str(bundle.get_app_id())
+        cfg["secrets"] = [s for s in bundle.get_secrets().values() if s]
+        config_store.update_config(CONFIG_FILE, {"app_id": cfg["app_id"], "secrets": ",".join(cfg["secrets"])})
     q = QobuzDL(**effective)
-    await q.initialize_client(
-        cfg["password"], cfg["app_id"], cfg["secrets"], on_token_refresh=_save_token
-    )
+    try:
+        await q.initialize_client(cfg["password"], cfg["app_id"], cfg["secrets"], on_token_refresh=_save_token)
+    except BaseException:
+        await q.aclose()
+        raise
     return q
 
 
@@ -232,34 +158,38 @@ def _common_options() -> Callable:
                 "-q",
                 "--quality",
                 metavar="int",
-                type=int,
+                type=click.Choice(["5", "6", "7", "27"]),
                 help='audio "quality" (5, 6, 7, 27)',
             ),
             click.option(
                 "--albums-only",
                 is_flag=True,
+                default=None,
                 help="don't download singles, EPs and VA releases",
             ),
             click.option(
                 "--no-m3u",
                 is_flag=True,
+                default=None,
                 help="don't create .m3u files when downloading playlists",
             ),
             click.option(
                 "--no-fallback",
                 is_flag=True,
+                default=None,
                 help="disable quality fallback (skip releases not available in set quality)",
             ),
-            click.option(
-                "-e", "--embed-art", is_flag=True, help="embed cover art into files"
-            ),
+            click.option("-e", "--embed-art", is_flag=True, default=None, help="embed cover art into files"),
             click.option(
                 "--og-cover",
                 is_flag=True,
+                default=None,
                 help="download cover art in its original quality (bigger file)",
             ),
-            click.option("--no-cover", is_flag=True, help="don't download cover art"),
-            click.option("--no-db", is_flag=True, help="don't call the database"),
+            click.option(
+                "--no-cover", is_flag=True, default=None, help="don't retain cover art (embedding still fetches art)"
+            ),
+            click.option("--no-db", is_flag=True, default=None, help="don't call the database"),
             click.option(
                 "-ff",
                 "--folder-format",
@@ -276,7 +206,14 @@ def _common_options() -> Callable:
                 "-s",
                 "--smart-discography",
                 is_flag=True,
+                default=None,
                 help="Enable heuristics to reduce spam-like albums in artist discographies",
+            ),
+            click.option(
+                "--download-limit",
+                metavar="int",
+                type=click.IntRange(1),
+                help="maximum simultaneous track downloads (default from config)",
             ),
         ]
         for opt in reversed(options):
@@ -286,74 +223,86 @@ def _common_options() -> Callable:
     return decorator
 
 
-@click.group(context_settings=dict(help_option_names=["-h", "--help"]))
-@click.option("-r", "--reset", is_flag=True, help="create/reset config file")
-@click.option(
-    "-p", "--purge", is_flag=True, help="purge/delete downloaded-IDs database"
+@click.group(
+    invoke_without_command=True, no_args_is_help=True, context_settings=dict(help_option_names=["-h", "--help"])
 )
-@click.option("-sc", "--show-config", is_flag=True, help="show configuration")
+@click.option("-r", "--reset", is_flag=True, default=None, help="create/reset config file")
+@click.option("-p", "--purge", is_flag=True, default=None, help="purge/delete downloaded-IDs database")
+@click.option("-sc", "--show-config", is_flag=True, default=None, help="show configuration")
 @click.pass_context
 def cli(ctx: click.Context, reset: bool, purge: bool, show_config: bool) -> None:
     """The ultimate Qobuz music downloader."""
-    # Bootstrapping and config lifecycle
-    os.makedirs(CONFIG_PATH, exist_ok=True)
+    try:
+        _maintenance(ctx, reset, purge, show_config)
+    except (config_store.ConfigError, OSError) as error:
+        raise click.ClickException(str(error)) from error
+
+
+def _maintenance(ctx: click.Context, reset: bool, purge: bool, show_config: bool) -> None:
     if reset:
         _reset_config(CONFIG_FILE)
         ctx.exit(0)
-
-    _ensure_config_exists()
-
     if show_config:
-        click.echo(f"Configuration: {CONFIG_FILE}\nDatabase: {QOBUZ_DB}\n---")
-        with open(CONFIG_FILE, "r") as f:
-            click.echo(f.read())
-        ctx.exit(0)
+        cfg = config_store.read_config(CONFIG_FILE)
+        for section in [cfg["DEFAULT"], *[cfg[name] for name in cfg.sections()]]:
+            for key in list(section):
+                if key in {"password", "secrets"}:
+                    section[key] = "[redacted]"
+        click.echo(f"Configuration: {CONFIG_FILE}\nDatabase: {QOBUZ_DB}")
+        from io import StringIO
 
+        output = StringIO()
+        cfg.write(output)
+        click.echo(output.getvalue())
+        ctx.exit(0)
     if purge:
         try:
             os.remove(QOBUZ_DB)
         except FileNotFoundError:
             pass
-        click.echo(f"{GREEN}The database was deleted.{RESET}")
+        click.echo("Download history removed; media and rollback backups are preserved.")
         ctx.exit(0)
-
-    try:
-        ctx.obj = _load_config()
-    except RuntimeError as e:
-        click.echo(f"{str(e)}{RESET}")
-        ctx.exit(2)
 
 
 def _run(
     ctx: click.Context,
     opts: Dict[str, Any],
-    action: Callable[[QobuzDL], Awaitable[None]],
+    action: Callable[[QobuzDL], Awaitable[Any]],
 ) -> None:
     """Build a client from the shared options and run an async action with
     uniform auth-error handling, Ctrl-C handling and temp-file cleanup."""
 
     async def runner() -> None:
         try:
+            _ensure_config_exists()
+            ctx.obj = _load_config()
             q = await _build_qobuz(ctx, **opts)
         except (
             AuthenticationError,
             IneligibleError,
             InvalidAppSecretError,
+            config_store.ConfigError,
+            RuntimeError,
         ) as e:
-            logging.error(f"{RED}{e}")
-            return
+            raise click.ClickException(str(e)) from e
         try:
-            await action(q)
+            result = await action(q)
+            outcome = result if isinstance(result, BatchResult) else q.last_result
+            if outcome.has_failures:
+                raise click.ClickException("One or more requested downloads failed")
         except KeyboardInterrupt:
-            logging.info(
-                f"{RED}Interrupted by user\n{YELLOW}Already downloaded items will "
-                "be skipped if you try to download the same releases again."
-            )
+            raise
         finally:
             await q.aclose()
-            _remove_leftovers(q.directory)
 
-    asyncio.run(runner())
+    try:
+        asyncio.run(runner())
+    except KeyboardInterrupt:
+        ctx.exit(130)
+    except click.ClickException:
+        raise
+    except Exception as error:
+        raise click.ClickException(f"Operation failed ({type(error).__name__})") from error
 
 
 @cli.command("fun")
@@ -362,7 +311,7 @@ def _run(
     "-l",
     "--limit",
     metavar="int",
-    type=int,
+    type=click.IntRange(1),
     help="limit of search results (default from config)",
 )
 @click.pass_context
@@ -393,6 +342,7 @@ def dl_cmd(ctx: click.Context, source: tuple[str, ...], **opts: Any) -> None:
     "--type",
     "type_",
     default=None,
+    type=click.Choice(["artist", "album", "track", "playlist"], case_sensitive=False),
     show_default=False,
     help="type of items to search (artist, album, track, playlist)",
 )
@@ -400,7 +350,7 @@ def dl_cmd(ctx: click.Context, source: tuple[str, ...], **opts: Any) -> None:
     "-n",
     "--number",
     metavar="int",
-    type=int,
+    type=click.IntRange(1),
     default=None,
     show_default=False,
     help="number of results to download",
@@ -427,7 +377,7 @@ def lucky_cmd(
 @cli.command("login")
 @click.option(
     "--timeout",
-    type=int,
+    type=click.IntRange(1),
     default=300,
     show_default=True,
     help="seconds to wait for you to finish logging in",
@@ -449,25 +399,37 @@ def login_cmd(ctx: click.Context, timeout: int) -> None:
         ctx.exit(1)
         return
     if not token:
-        click.echo(
-            f"{RED}No token captured (login not completed or window closed). "
-            "Please try again."
-        )
+        click.echo(f"{RED}No token captured (login not completed or window closed). Please try again.")
         ctx.exit(1)
         return
-    _save_token(token)
+    try:
+        _save_browser_token(token)
+    except (config_store.ConfigError, OSError) as error:
+        raise click.ClickException(str(error)) from error
     click.echo(f"{GREEN}Token captured and saved to {CONFIG_FILE}{RESET}")
 
 
 @cli.command("set-token")
-@click.argument("token")
-def set_token_cmd(token: str) -> None:
+@click.argument("token", required=False)
+@click.option("--stdin", "from_stdin", is_flag=True, help="read a token from standard input")
+def set_token_cmd(token: Optional[str], from_stdin: bool) -> None:
     """Store a fresh Qobuz user_auth_token in the config (no browser needed)."""
-    _save_token(token.strip())
+    if token is not None and from_stdin:
+        raise click.UsageError("Use a token argument or --stdin, not both")
+    if from_stdin:
+        token = sys.stdin.read().strip()
+    elif token is None:
+        token = click.prompt("Qobuz token", hide_input=True)
+    try:
+        _save_token(token)
+    except (config_store.ConfigError, OSError) as error:
+        raise click.ClickException(str(error)) from error
     click.echo(f"{GREEN}Token saved to {CONFIG_FILE}{RESET}")
 
 
 def main() -> int:
+    logging.basicConfig(level=logging.INFO, format=f"%(message)s{RESET}")
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     # If no subcommand provided, Click will show help automatically.
     try:
         cli(prog_name="qobuz-dl2", standalone_mode=True)

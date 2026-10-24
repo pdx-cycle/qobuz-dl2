@@ -2,6 +2,7 @@
 # of qopy, originally written by Sorrow446. All credits to the
 # original author.
 
+import asyncio
 import hashlib
 import logging
 import time
@@ -15,7 +16,10 @@ from qobuz_dl2.exceptions import (
     IneligibleError,
     InvalidAppSecretError,
     InvalidQuality,
+    ResponseError,
+    StreamingEndpointRetiredError,
 )
+from qobuz_dl2.network import get_with_retry
 
 RESET = "Reset your credentials with 'qobuz-dl2 -r'"
 
@@ -42,8 +46,13 @@ class Client:
         app_id,
         secrets,
         on_token_refresh: Optional[Callable[[str], None]] = None,
+        request_limit: int = 4,
     ):
         logger.info(f"{YELLOW}Logging...")
+        if int(request_limit) < 1:
+            raise ValueError("Request limit must be positive")
+        self.request_limit = int(request_limit)
+        self.request_budget = None
         self.secrets = secrets
         self.id = str(app_id)
         self.token = (token or "").strip()
@@ -61,8 +70,11 @@ class Client:
         )
 
     async def initialize(self):
-        await self.auth()
-        await self.cfg_setup()
+        try:
+            await self.auth()
+        except BaseException:
+            await self.aclose()
+            raise
 
     async def aclose(self):
         await self.client.aclose()
@@ -79,33 +91,43 @@ class Client:
             raise AuthenticationError(TOKEN_HELP)
 
         try:
-            r = await self.client.post(
-                self.base + "user/login", data={"extra": "partner"}
-            )
+            r = await self.client.post(self.base + "user/login", data={"extra": "partner"})
         except httpx.HTTPError as e:
-            raise AuthenticationError(f"Could not reach Qobuz: {e}\n{RESET}")
+            raise AuthenticationError(f"Could not reach Qobuz ({type(e).__name__})") from e
 
         if r.status_code in (400, 401):
             raise AuthenticationError(TOKEN_HELP)
         r.raise_for_status()
-        data = r.json()
-
-        new_token = data.get("user_auth_token")
-        if new_token and new_token != self.token:
-            self.token = new_token
-            if self.on_token_refresh is not None:
-                try:
-                    self.on_token_refresh(new_token)
-                    logger.info(f"{GREEN}Token refreshed and saved")
-                except Exception as e:  # pragma: no cover - best effort
-                    logger.warning(f"{YELLOW}Could not save refreshed token: {e}")
-        self.uat = self.token
-        self.client.headers["X-User-Auth-Token"] = self.uat
-
-        params = (data.get("user") or {}).get("credential", {}).get("parameters")
-        # An empty (but present) parameters object means a free account.
+        try:
+            data = r.json()
+            if not isinstance(data, dict) or not isinstance(data.get("user"), dict):
+                raise ValueError("Missing user identity")
+            user = data["user"]
+            identity = user.get("id")
+            if isinstance(identity, bool) or not isinstance(identity, (str, int)) or not identity:
+                raise ValueError("Missing user identity")
+            new_token = data.get("user_auth_token", self.token)
+            if not isinstance(new_token, str) or not new_token.strip():
+                raise ValueError("Invalid refreshed token")
+            credential = user.get("credential", {})
+            if not isinstance(credential, dict):
+                raise ValueError("Invalid credentials response")
+            params = credential.get("parameters")
+            if params is not None and not isinstance(params, dict):
+                raise ValueError("Invalid membership response")
+        except (ValueError, TypeError) as error:
+            raise AuthenticationError("Invalid authentication response from Qobuz") from error
         if params is not None and not params:
             raise IneligibleError("Free accounts are not eligible to download tracks.")
+        new_token = new_token.strip()
+        if new_token != self.token and self.on_token_refresh is not None:
+            try:
+                self.on_token_refresh(new_token)
+                logger.info("Token refreshed and saved")
+            except Exception as error:
+                logger.warning("Could not save refreshed token (%s)", type(error).__name__)
+        self.token = self.uat = new_token
+        self.client.headers["X-User-Auth-Token"] = new_token
         self.label = (params or {}).get("short_label", "unknown")
         logger.info(f"{GREEN}Logged: OK\n{GREEN}Membership: {self.label}")
 
@@ -153,26 +175,65 @@ class Client:
         else:
             params = kwargs
 
-        r = await self.client.get(self.base + epoint, params=params)
-
-        if r.status_code == 401:
-            raise AuthenticationError(TOKEN_HELP)
-        if epoint == "track/getFileUrl" and r.status_code == 400:
-            raise InvalidAppSecretError(f"Invalid app secret: {r.json()}.\n" + RESET)
-
-        r.raise_for_status()
-        return r.json()
+        try:
+            if self.request_budget is None:
+                self.request_budget = asyncio.Semaphore(self.request_limit)
+            async with self.request_budget:
+                r = await get_with_retry(self.client, self.base + epoint, params=params)
+        except httpx.HTTPStatusError as error:
+            if error.response.status_code == 401:
+                raise AuthenticationError(TOKEN_HELP) from error
+            if epoint == "track/getFileUrl" and error.response.status_code == 410:
+                raise StreamingEndpointRetiredError(
+                    "Qobuz authentication succeeded, but Qobuz retired the legacy "
+                    "track/getFileUrl endpoint required by this qobuz-dl2 release. "
+                    "Resetting the token or app secrets will not restore downloads; "
+                    "a version supporting Qobuz's current session-based segmented streaming is required."
+                ) from error
+            if epoint == "track/getFileUrl" and error.response.status_code == 400:
+                raise InvalidAppSecretError("App secret rejected. " + RESET) from error
+            raise
+        try:
+            data = r.json()
+        except ValueError as error:
+            raise ResponseError("Qobuz returned invalid JSON") from error
+        if not isinstance(data, dict):
+            raise ResponseError("Qobuz returned an unexpected response type")
+        return data
 
     async def multi_meta(self, epoint, key, id, type):
         offset = 0
-        total = 1
-        while total > 0:
+        expected_total = None
+        resource = "tracks" if epoint == "playlist/get" else "albums"
+        while True:
             j = await self.api_call(epoint, id=id, offset=offset, type=type)
+            block = j.get(resource)
+            if not isinstance(block, dict):
+                raise ResponseError("Missing or invalid collection block")
+            items = block.get("items")
+            if not isinstance(items, list):
+                raise ResponseError("Invalid collection items")
+            totals = [container[field] for container, field in ((j, key), (block, "total")) if field in container]
+            for total in totals:
+                if not isinstance(total, int) or isinstance(total, bool) or total < 0:
+                    raise ResponseError("Invalid collection total")
+                if expected_total is not None and total != expected_total:
+                    raise ResponseError("Collection total changed during enumeration")
+                expected_total = total
+            if "offset" in block and block["offset"] != offset:
+                raise ResponseError("Collection offset did not advance")
+            if expected_total is not None:
+                if offset + len(items) > expected_total or (not items and offset < expected_total):
+                    raise ResponseError("Collection ended before its advertised members were returned")
             yield j
-            if offset == 0:
-                total = j.get(key, 0)
-            total -= 500
-            offset += 500
+            if not items:
+                return
+            offset += len(items)
+            if expected_total is not None:
+                if offset >= expected_total:
+                    return
+            elif len(items) < 500:
+                return
 
     async def get_album_meta(self, id):
         return await self.api_call("album/get", id=id)
@@ -181,15 +242,17 @@ class Client:
         return await self.api_call("track/get", id=id)
 
     async def get_track_url(self, id, fmt_id):
+        if self.sec is None:
+            await self.cfg_setup()
         return await self.api_call("track/getFileUrl", id=id, fmt_id=fmt_id)
 
-    async def get_artist_meta(self, id):
+    def get_artist_meta(self, id):
         return self.multi_meta("artist/get", "albums_count", id, None)
 
-    async def get_plist_meta(self, id):
+    def get_plist_meta(self, id):
         return self.multi_meta("playlist/get", "tracks_count", id, None)
 
-    async def get_label_meta(self, id):
+    def get_label_meta(self, id):
         return self.multi_meta("label/get", "albums_count", id, None)
 
     async def search_albums(self, query, limit):
@@ -206,8 +269,8 @@ class Client:
 
     async def test_secret(self, sec):
         try:
-            await self.api_call("track/getFileUrl", id=5966783, fmt_id=5, sec=sec)
-            return True
+            data = await self.api_call("track/getFileUrl", id=5966783, fmt_id=5, sec=sec)
+            return isinstance(data.get("url"), str) and bool(data["url"])
         except InvalidAppSecretError:
             return False
 
@@ -218,4 +281,8 @@ class Client:
             if await self.test_secret(secret):
                 self.sec = secret
                 return
-        raise InvalidAppSecretError("Can't find any valid app secret.\n" + RESET)
+        raise InvalidAppSecretError(
+            "Authentication succeeded, but Qobuz rejected every application secret "
+            "for the legacy streaming endpoint. Your login token remains valid; "
+            "re-running login will not repair stream setup."
+        )

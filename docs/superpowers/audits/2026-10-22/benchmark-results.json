@@ -1,0 +1,713 @@
+{
+  "method": "MockTransport; generated sine; real Mutagen/disk publication; cold temp destination per run",
+  "runs": 5,
+  "tracks": 12,
+  "cases": {
+    "small_limit_1": {
+      "median": {
+        "seconds": 0.27209741700062295,
+        "requests": 12,
+        "bytes": 2433036,
+        "peak_streams": 1,
+        "pools": 1,
+        "peak_traced_bytes": 582166,
+        "max_heartbeat_gap_ms": 3.2691250016796403
+      },
+      "samples": [
+        {
+          "seconds": 0.28399474999969243,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 820956,
+          "max_heartbeat_gap_ms": 3.2691250016796403
+        },
+        {
+          "seconds": 0.26481224999952246,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 515718,
+          "max_heartbeat_gap_ms": 3.2622920007270295
+        },
+        {
+          "seconds": 0.26831441700051073,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 586282,
+          "max_heartbeat_gap_ms": 3.232999999454478
+        },
+        {
+          "seconds": 0.27209741700062295,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 582166,
+          "max_heartbeat_gap_ms": 3.3791249989008065
+        },
+        {
+          "seconds": 0.2749222919992462,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 520728,
+          "max_heartbeat_gap_ms": 3.6424579993763473
+        }
+      ]
+    },
+    "small_limit_2": {
+      "median": {
+        "seconds": 0.18858845800059498,
+        "requests": 12,
+        "bytes": 2433036,
+        "peak_streams": 2,
+        "pools": 1,
+        "peak_traced_bytes": 768208,
+        "max_heartbeat_gap_ms": 3.3966250011872035
+      },
+      "samples": [
+        {
+          "seconds": 0.18889129200033494,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 768208,
+          "max_heartbeat_gap_ms": 3.3966250011872035
+        },
+        {
+          "seconds": 0.19008491700151353,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 792831,
+          "max_heartbeat_gap_ms": 3.185207999194972
+        },
+        {
+          "seconds": 0.18858845800059498,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 762350,
+          "max_heartbeat_gap_ms": 3.3638749991951045
+        },
+        {
+          "seconds": 0.18739958299920545,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 761284,
+          "max_heartbeat_gap_ms": 4.607457998645259
+        },
+        {
+          "seconds": 0.18703195799753303,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 790412,
+          "max_heartbeat_gap_ms": 3.4785409989126492
+        }
+      ]
+    },
+    "small_limit_4": {
+      "median": {
+        "seconds": 0.1629268750002666,
+        "requests": 12,
+        "bytes": 2433036,
+        "peak_streams": 4,
+        "pools": 1,
+        "peak_traced_bytes": 1184562,
+        "max_heartbeat_gap_ms": 6.922540997038595
+      },
+      "samples": [
+        {
+          "seconds": 0.16328045800037216,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 1200514,
+          "max_heartbeat_gap_ms": 6.428207998396829
+        },
+        {
+          "seconds": 0.1561183340018033,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 1174092,
+          "max_heartbeat_gap_ms": 6.922540997038595
+        },
+        {
+          "seconds": 0.17030016600256204,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 1212924,
+          "max_heartbeat_gap_ms": 6.092333998822141
+        },
+        {
+          "seconds": 0.15991916699931608,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 1160273,
+          "max_heartbeat_gap_ms": 8.525375000317581
+        },
+        {
+          "seconds": 0.1629268750002666,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 1184562,
+          "max_heartbeat_gap_ms": 7.056582999211969
+        }
+      ]
+    },
+    "large_limit_1": {
+      "median": {
+        "seconds": 0.27793137499975273,
+        "requests": 12,
+        "bytes": 8724900,
+        "peak_streams": 1,
+        "pools": 1,
+        "peak_traced_bytes": 1389714,
+        "max_heartbeat_gap_ms": 3.34691600073711
+      },
+      "samples": [
+        {
+          "seconds": 0.2759948750026524,
+          "requests": 12,
+          "bytes": 8724900,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 1389475,
+          "max_heartbeat_gap_ms": 3.6536250008794013
+        },
+        {
+          "seconds": 0.2789122080030211,
+          "requests": 12,
+          "bytes": 8724900,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 1389714,
+          "max_heartbeat_gap_ms": 3.339416998642264
+        },
+        {
+          "seconds": 0.27899545900072553,
+          "requests": 12,
+          "bytes": 8724900,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 1389284,
+          "max_heartbeat_gap_ms": 3.8982910009508487
+        },
+        {
+          "seconds": 0.27793137499975273,
+          "requests": 12,
+          "bytes": 8724900,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 1389738,
+          "max_heartbeat_gap_ms": 3.052292002394097
+        },
+        {
+          "seconds": 0.27259691700237454,
+          "requests": 12,
+          "bytes": 8724900,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 1390077,
+          "max_heartbeat_gap_ms": 3.34691600073711
+        }
+      ]
+    },
+    "large_limit_2": {
+      "median": {
+        "seconds": 0.1925538340001367,
+        "requests": 12,
+        "bytes": 8724900,
+        "peak_streams": 2,
+        "pools": 1,
+        "peak_traced_bytes": 2039944,
+        "max_heartbeat_gap_ms": 3.4858750004787
+      },
+      "samples": [
+        {
+          "seconds": 0.20109229200170375,
+          "requests": 12,
+          "bytes": 8724900,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 1994326,
+          "max_heartbeat_gap_ms": 4.348750000644941
+        },
+        {
+          "seconds": 0.19041650000144728,
+          "requests": 12,
+          "bytes": 8724900,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 2041749,
+          "max_heartbeat_gap_ms": 3.4858750004787
+        },
+        {
+          "seconds": 0.1925538340001367,
+          "requests": 12,
+          "bytes": 8724900,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 2041957,
+          "max_heartbeat_gap_ms": 3.4599169994180556
+        },
+        {
+          "seconds": 0.19153224999899976,
+          "requests": 12,
+          "bytes": 8724900,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 2039296,
+          "max_heartbeat_gap_ms": 3.4115000016754493
+        },
+        {
+          "seconds": 0.1926242919980723,
+          "requests": 12,
+          "bytes": 8724900,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 2039944,
+          "max_heartbeat_gap_ms": 3.8062919993535616
+        }
+      ]
+    },
+    "large_limit_4": {
+      "median": {
+        "seconds": 0.16608587500013527,
+        "requests": 12,
+        "bytes": 8724900,
+        "peak_streams": 4,
+        "pools": 1,
+        "peak_traced_bytes": 2595339,
+        "max_heartbeat_gap_ms": 6.292458001553314
+      },
+      "samples": [
+        {
+          "seconds": 0.16159558400249807,
+          "requests": 12,
+          "bytes": 8724900,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 2479722,
+          "max_heartbeat_gap_ms": 6.28225000036764
+        },
+        {
+          "seconds": 0.16608587500013527,
+          "requests": 12,
+          "bytes": 8724900,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 2341918,
+          "max_heartbeat_gap_ms": 6.089250000513857
+        },
+        {
+          "seconds": 0.17626716599988868,
+          "requests": 12,
+          "bytes": 8724900,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 2595339,
+          "max_heartbeat_gap_ms": 6.292458001553314
+        },
+        {
+          "seconds": 0.1692466249987774,
+          "requests": 12,
+          "bytes": 8724900,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 2879236,
+          "max_heartbeat_gap_ms": 6.61312499869382
+        },
+        {
+          "seconds": 0.1642768329984392,
+          "requests": 12,
+          "bytes": 8724900,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 3329678,
+          "max_heartbeat_gap_ms": 6.744124999386258
+        }
+      ]
+    },
+    "slow_tag_limit_1": {
+      "median": {
+        "seconds": 0.3518687920004595,
+        "requests": 12,
+        "bytes": 2433036,
+        "peak_streams": 1,
+        "pools": 1,
+        "peak_traced_bytes": 573654,
+        "max_heartbeat_gap_ms": 3.7846250015718397
+      },
+      "samples": [
+        {
+          "seconds": 0.34118141600265517,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 583332,
+          "max_heartbeat_gap_ms": 3.5849589985446073
+        },
+        {
+          "seconds": 0.3732069590005267,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 570576,
+          "max_heartbeat_gap_ms": 6.272750000789529
+        },
+        {
+          "seconds": 0.3518687920004595,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 503858,
+          "max_heartbeat_gap_ms": 3.6931670001649763
+        },
+        {
+          "seconds": 0.3526609170003212,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 583507,
+          "max_heartbeat_gap_ms": 3.869041996949818
+        },
+        {
+          "seconds": 0.3491613750011311,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 573654,
+          "max_heartbeat_gap_ms": 3.7846250015718397
+        }
+      ]
+    },
+    "slow_tag_limit_2": {
+      "median": {
+        "seconds": 0.20987483400313067,
+        "requests": 12,
+        "bytes": 2433036,
+        "peak_streams": 2,
+        "pools": 1,
+        "peak_traced_bytes": 759584,
+        "max_heartbeat_gap_ms": 4.526958000496961
+      },
+      "samples": [
+        {
+          "seconds": 0.20399841600010404,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 720973,
+          "max_heartbeat_gap_ms": 4.427583000506274
+        },
+        {
+          "seconds": 0.20987483400313067,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 791387,
+          "max_heartbeat_gap_ms": 4.989708999346476
+        },
+        {
+          "seconds": 0.21915670800080989,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 788500,
+          "max_heartbeat_gap_ms": 4.994708997401176
+        },
+        {
+          "seconds": 0.21512204199825646,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 752157,
+          "max_heartbeat_gap_ms": 4.526958000496961
+        },
+        {
+          "seconds": 0.20625512499827892,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 759584,
+          "max_heartbeat_gap_ms": 4.470415999094257
+        }
+      ]
+    },
+    "slow_tag_limit_4": {
+      "median": {
+        "seconds": 0.16502812500039,
+        "requests": 12,
+        "bytes": 2433036,
+        "peak_streams": 4,
+        "pools": 1,
+        "peak_traced_bytes": 1177266,
+        "max_heartbeat_gap_ms": 8.92066700180294
+      },
+      "samples": [
+        {
+          "seconds": 0.16017108300002292,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 1139104,
+          "max_heartbeat_gap_ms": 7.097000001522247
+        },
+        {
+          "seconds": 0.16598483299821964,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 1177266,
+          "max_heartbeat_gap_ms": 8.92066700180294
+        },
+        {
+          "seconds": 0.16294616699815379,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 1110634,
+          "max_heartbeat_gap_ms": 9.699333997559734
+        },
+        {
+          "seconds": 0.16502812500039,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 1209933,
+          "max_heartbeat_gap_ms": 7.658082999114413
+        },
+        {
+          "seconds": 0.1660461249994114,
+          "requests": 12,
+          "bytes": 2433036,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 1199735,
+          "max_heartbeat_gap_ms": 10.144625000975793
+        }
+      ]
+    },
+    "mixed_404_limit_1": {
+      "median": {
+        "seconds": 0.22575804200096172,
+        "requests": 12,
+        "bytes": 2027530,
+        "peak_streams": 1,
+        "pools": 1,
+        "peak_traced_bytes": 583388,
+        "max_heartbeat_gap_ms": 2.9603330003737938
+      },
+      "samples": [
+        {
+          "seconds": 0.23138770800142083,
+          "requests": 12,
+          "bytes": 2027530,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 583388,
+          "max_heartbeat_gap_ms": 2.908500002376968
+        },
+        {
+          "seconds": 0.24060420900059398,
+          "requests": 12,
+          "bytes": 2027530,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 593285,
+          "max_heartbeat_gap_ms": 5.323584002326243
+        },
+        {
+          "seconds": 0.22452587499719812,
+          "requests": 12,
+          "bytes": 2027530,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 549278,
+          "max_heartbeat_gap_ms": 2.9603330003737938
+        },
+        {
+          "seconds": 0.22300170800008345,
+          "requests": 12,
+          "bytes": 2027530,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 509364,
+          "max_heartbeat_gap_ms": 3.4064169994962867
+        },
+        {
+          "seconds": 0.22575804200096172,
+          "requests": 12,
+          "bytes": 2027530,
+          "peak_streams": 1,
+          "pools": 1,
+          "peak_traced_bytes": 593900,
+          "max_heartbeat_gap_ms": 2.8458749984565657
+        }
+      ]
+    },
+    "mixed_404_limit_2": {
+      "median": {
+        "seconds": 0.16172058300071512,
+        "requests": 12,
+        "bytes": 2027530,
+        "peak_streams": 2,
+        "pools": 1,
+        "peak_traced_bytes": 777322,
+        "max_heartbeat_gap_ms": 3.4237910003867
+      },
+      "samples": [
+        {
+          "seconds": 0.16172058300071512,
+          "requests": 12,
+          "bytes": 2027530,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 777322,
+          "max_heartbeat_gap_ms": 3.330333001940744
+        },
+        {
+          "seconds": 0.15918925000005402,
+          "requests": 12,
+          "bytes": 2027530,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 719585,
+          "max_heartbeat_gap_ms": 3.4237910003867
+        },
+        {
+          "seconds": 0.1580832500003453,
+          "requests": 12,
+          "bytes": 2027530,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 802460,
+          "max_heartbeat_gap_ms": 3.3053750012186356
+        },
+        {
+          "seconds": 0.1645643750016461,
+          "requests": 12,
+          "bytes": 2027530,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 804225,
+          "max_heartbeat_gap_ms": 3.463875000306871
+        },
+        {
+          "seconds": 0.16337070900044637,
+          "requests": 12,
+          "bytes": 2027530,
+          "peak_streams": 2,
+          "pools": 1,
+          "peak_traced_bytes": 774963,
+          "max_heartbeat_gap_ms": 3.6848750023636967
+        }
+      ]
+    },
+    "mixed_404_limit_4": {
+      "median": {
+        "seconds": 0.13930987499770708,
+        "requests": 12,
+        "bytes": 2027530,
+        "peak_streams": 4,
+        "pools": 1,
+        "peak_traced_bytes": 1170996,
+        "max_heartbeat_gap_ms": 6.4767920011945534
+      },
+      "samples": [
+        {
+          "seconds": 0.14651929100000416,
+          "requests": 12,
+          "bytes": 2027530,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 1147219,
+          "max_heartbeat_gap_ms": 6.4767920011945534
+        },
+        {
+          "seconds": 0.13930987499770708,
+          "requests": 12,
+          "bytes": 2027530,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 1170996,
+          "max_heartbeat_gap_ms": 5.957875000603963
+        },
+        {
+          "seconds": 0.1404204579994257,
+          "requests": 12,
+          "bytes": 2027530,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 1185159,
+          "max_heartbeat_gap_ms": 6.4359579992014915
+        },
+        {
+          "seconds": 0.1392957079988264,
+          "requests": 12,
+          "bytes": 2027530,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 1178172,
+          "max_heartbeat_gap_ms": 7.116749999113381
+        },
+        {
+          "seconds": 0.1331609170010779,
+          "requests": 12,
+          "bytes": 2027530,
+          "peak_streams": 4,
+          "pools": 1,
+          "peak_traced_bytes": 1113624,
+          "max_heartbeat_gap_ms": 11.433333998866146
+        }
+      ]
+    },
+    "collection_1501_limit_4": {
+      "seconds": 20.99450945799981,
+      "requests": 1501,
+      "bytes": 304332253,
+      "peak_streams": 4,
+      "pools": 1,
+      "peak_traced_bytes": 3572973,
+      "max_heartbeat_gap_ms": 24.5127499983937
+    }
+  },
+  "scheduler_cancellation_ms": 0.08733399954508059
+}

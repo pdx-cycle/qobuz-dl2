@@ -1,0 +1,14 @@
+{
+  "baseline_files_preserved": 20,
+  "changed_baseline_files": [],
+  "existing_tests": "24 passed in 0.17s; cached pytest 8.4.2; plugin autoload disabled",
+  "lint": "ruff check . passed",
+  "format": "evidence scripts formatted; nine baseline product files would reformat; product formatting unchanged",
+  "build": "wheel built with cached Hatchling; 12 product modules; console script correct; no context DB/logs",
+  "python_floor": "12 product modules compiled with Python 3.9.18; runtime/dependency compatibility not qualified",
+  "typecheck": "not qualified: available mypy/dependency combinations incompatible with configured Python 3.9 analysis; exact frozen env unavailable",
+  "frozen_environment": "uv sync --frozen blocked by package host DNS failure",
+  "offline_probes": "nine independent scripts executed successfully, documenting defective behavior; see observations.txt",
+  "review": "independent artifact review complete; two plan corrections incorporated; no remaining important review findings",
+  "implementation": "not started; only docs/evidence added"
+}

@@ -1,0 +1,22 @@
+{
+  "qobuz_dl2/bundle.py": "d27a7bcb5165c21275dc2392a8a8a22232f3b784f833769e13dc81d51525cae8",
+  "qobuz_dl2/db.py": "a9da1c79ac07086fda68e50f6ca17e39cf4f796bb66a8afada08931ab40bbefe",
+  "qobuz_dl2/color.py": "ea2020ef1fa5258227d71d9aec6f28e8a5741932e5e0240dcbe4d874d626c390",
+  "qobuz_dl2/metadata.py": "9827f7f58dafb3bc824714d094ed6f1c5a459b3f343bfcaeabede1c7c208e6b5",
+  "qobuz_dl2/downloader.py": "84ce0597e307584eb7a753421a31bfb090dfe718b79b8cc1926ea0939a8dc093",
+  "qobuz_dl2/__init__.py": "6a4d35b86c35c378dea99cce5a1bbb91a857904a339022719bad295c314a54fb",
+  "qobuz_dl2/core.py": "085f6a973e28349b6bcf1c47721854feaff4b19078acfcd3f5592e631fc35840",
+  "qobuz_dl2/browser_login.py": "57c1fae2011ef83ad73d53e21640765c53d181300347a2d6f8f669a18c85b05f",
+  "qobuz_dl2/cli.py": "ca80e92a15c4887fef99beb199bcab41e3e540980c9a13f534526d64c28e1b76",
+  "qobuz_dl2/utils.py": "c1e8e85fe22c7fdebac620b444d3f80c2f053a29950087b561e1d140df8bd4cb",
+  "qobuz_dl2/exceptions.py": "a3619106dacbc4667c292c2426081dfcdaa2c5d6529ed240d0b01dea937001c9",
+  "qobuz_dl2/qopy.py": "9ac742d45aafafcbea0be832acea8daa99eb47884c5f35bec41ac46d5160c768",
+  "tests/test_utils.py": "a3e14699770cd3864fb73c1cc9cf67d57c3ae169cc5d625b2d99e3089a742ee5",
+  "tests/test_metadata.py": "bd0cb886bc38b73416cf0666bd092c741f6226f3501ebf6bd69926911fc6b7db",
+  "tests/test_bundle.py": "89d6b3b724b0041d9c513366000bf02bb64431814b2fa6b398cf5e746a0e4ec9",
+  "tests/test_downloader.py": "e9729cb8ceb579708de382dd305730ea19ae2502a010e1cc03332f8b53705f46",
+  "tests/test_cli_config.py": "b63d3023f7d3f3339b67bedf6092b42f6b9cf898f4be701c769c6ca22bd447ff",
+  "README.md": "682e810cd709e559fd043ff04e6e0b0cf580aa697f672b56dfec53d5093741d4",
+  "pyproject.toml": "9e215ecc1a412263b1e5075df3f0e40c86af2ea35087a1c0490dd023afd04386",
+  "uv.lock": "a692aaa3edc90d74e1f3ded60def56955fcd87981875026458ed8a09207129ff"
+}

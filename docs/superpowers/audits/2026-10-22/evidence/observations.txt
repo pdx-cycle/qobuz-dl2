@@ -1,0 +1,150 @@
+=== core_probe.py: exit 0 ===
+Downloading all the music from A (artist)!
+1 downloads in queue
+Download-IDs database created
+Ignoring Single/EP/VA: Single
+ARTIFACT_DIR /private/tmp/qobuz-core-audit-uqq0n68f
+COLLECTION TypeError 'async for' requires an object with __aiter__ method, got coroutine
+COLLECTION_WARNINGS ["coroutine 'Client.get_artist_meta' was never awaited"]
+TWO_PAGE_IDS ['1']
+
+This release ID (skipped-single) was already downloaded according to the local database.
+Use the '--no-db' flag to bypass this.
+Download-IDs database created
+This release ID (same) was already downloaded according to the local database.
+Use the '--no-db' flag to bypass this.
+Download-IDs database created
+SKIPPED_IN_DB ('skipped-single',) FILES []
+METADATA_CALLS_AFTER_RETRY ['skipped-single']
+DIFFERENT_TARGET_QUALITY_DOWNLOADS [('same', '/private/tmp/qobuz-core-audit-uqq0n68f/playlist1', 6)]
+FILTER other_artist_higher_quality []
+FILTER lower_quality_remaster []
+FILTER higher_quality_extras []
+M3U '#EXTM3U\n\n#EXTINF:120, Artist - Title\nplaylist/Root.flac\n\n#EXTINF:120, Artist - Title\nDisc 1/Nested.flac'
+M3U_TARGET_EXISTENCE [('playlist/Root.flac', False), ('Disc 1/Nested.flac', False)]
+URL https://example.com/album/123 ('album', '123')
+URL https://play.qobuz.com/album/abc/garbage ('album', 'garbage')
+URL https://play.qobuz.com/album/abc-123 ('album', 'abc')
+URL xxx /track/123 ('track', '123')
+DURATION_25H 01:00:00
+DB_FDS 5 105
+DB_FDS_AFTER_GC 4
+
+
+=== download_probe.py: exit 0 ===
+HTTP Request: GET https://example.test/track "HTTP/1.1 200 OK"
+Error tagging the file: '/private/tmp/qobuz-probe-04v_hzd5/badflac/.00.tmp' is not a valid FLAC file
+Traceback (most recent call last):
+  File "/Users/ajbrittle/Development/python/qobuz-dl/qobuz_dl2/downloader.py", line 313, in _download_and_tag
+    await loop.run_in_executor(
+    ...<9 lines>...
+    )
+  File "/Users/ajbrittle/.local/share/uv/python/cpython-3.14.6-macos-aarch64-none/lib/python3.14/concurrent/futures/thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "/Users/ajbrittle/.local/share/uv/python/cpython-3.14.6-macos-aarch64-none/lib/python3.14/concurrent/futures/thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "/Users/ajbrittle/Development/python/qobuz-dl/qobuz_dl2/metadata.py", line 137, in tag_flac
+    audio = FLAC(filename)
+  File "/Users/ajbrittle/.local/share/uv/tools/qobuz-dl2/lib/python3.14/site-packages/mutagen/_file.py", line 48, in __init__
+    self.load(*args, **kwargs)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/ajbrittle/.local/share/uv/tools/qobuz-dl2/lib/python3.14/site-packages/mutagen/_util.py", line 185, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/ajbrittle/.local/share/uv/tools/qobuz-dl2/lib/python3.14/site-packages/mutagen/_util.py", line 156, in wrapper
+    return func(self, h, *args, **kwargs)
+  File "/Users/ajbrittle/.local/share/uv/tools/qobuz-dl2/lib/python3.14/site-packages/mutagen/flac.py", line 794, in load
+    self.__check_header(fileobj, filething.name)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ajbrittle/.local/share/uv/tools/qobuz-dl2/lib/python3.14/site-packages/mutagen/flac.py", line 929, in __check_header
+    raise FLACNoHeaderError(
+        "%r is not a valid FLAC file" % name)
+mutagen.flac.FLACNoHeaderError: '/private/tmp/qobuz-probe-04v_hzd5/badflac/.00.tmp' is not a valid FLAC file
+HTTP Request: GET https://example.test/cover "HTTP/1.1 200 OK"
+cover.jpg was already downloaded
+HTTP Request: GET https://example.test/track "HTTP/1.1 200 OK"
+HTTP Request: GET https://example.test/cover "HTTP/1.1 200 OK"
+Error tagging the file: [Errno 2] No such file or directory: '/private/tmp/qobuz-probe-04v_hzd5/cover.jpg'
+Traceback (most recent call last):
+  File "/Users/ajbrittle/Development/python/qobuz-dl/qobuz_dl2/downloader.py", line 313, in _download_and_tag
+    await loop.run_in_executor(
+    ...<9 lines>...
+    )
+  File "/Users/ajbrittle/.local/share/uv/python/cpython-3.14.6-macos-aarch64-none/lib/python3.14/concurrent/futures/thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "/Users/ajbrittle/.local/share/uv/python/cpython-3.14.6-macos-aarch64-none/lib/python3.14/concurrent/futures/thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "/Users/ajbrittle/Development/python/qobuz-dl/docs/superpowers/audits/2026-10-22/evidence/download_probe.py", line 121, in observed_tag
+    return original(*args)
+  File "/Users/ajbrittle/Development/python/qobuz-dl/qobuz_dl2/metadata.py", line 241, in tag_mp3
+    _embed_id3_img(root_dir, audio)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/ajbrittle/Development/python/qobuz-dl/qobuz_dl2/metadata.py", line 109, in _embed_id3_img
+    with open(cover_image, "rb") as cover:
+         ~~~~^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/private/tmp/qobuz-probe-04v_hzd5/cover.jpg'
+HTTP Request: GET https://example.test/track "HTTP/1.1 200 OK"
+HTTP Request: GET https://example.test/track "HTTP/1.1 200 OK"
+HTTP Request: GET https://example.test/track "HTTP/1.1 200 OK"
+HTTP Request: GET https://example.test/track "HTTP/1.1 200 OK"
+tag failure outcome: returned success; finals= [] temporary= ['.00.tmp']
+cancel outcome: partial cover size= 8192 requests including retry call= 1
+cover race outcome: tagging errors= ['FileNotFoundError'] final MP3 count= 0 cover exists= True
+non-audio MP3 outcome: published= 01. Track.mp3 size= 1300 parser result= HeaderNotFoundError
+gzip outcome: RetryError requests= 3 wire bytes= 64 decoded bytes=32768 file exists= False
+
+
+=== artwork_probe.py: exit 0 ===
+full cover bytes= 16384 embedded bytes= 0
+
+
+=== api_probe.py: exit 0 ===
+Logging...
+HTTP Request: POST https://www.qobuz.com/api.json/0.2/user/login "HTTP/1.1 401 Unauthorized"
+Logging...
+HTTP Request: POST https://www.qobuz.com/api.json/0.2/user/login "HTTP/1.1 200 OK"
+Logged: OK
+Membership: unknown
+HTTP Request: POST https://www.qobuz.com/api.json/0.2/user/login "HTTP/1.1 200 OK"
+HTTP Request: GET https://www.qobuz.com/api.json/0.2/track/getFileUrl?request_ts=1792719489.433258&request_sig=8f45129efb2a56255fdd1c97ada465eb&track_id=5966783&format_id=5&intent=stream "HTTP/1.1 400 Bad Request"
+HTTP Request: GET https://www.qobuz.com/api.json/0.2/track/get?track_id=1 "HTTP/1.1 503 Service Unavailable"
+initialize authentication failure: AuthenticationError closed= False
+empty login response accepted: unknown
+null credential: AttributeError 'NoneType' object has no attribute 'get'
+non-JSON secret rejection: JSONDecodeError remaining responses= 1
+transient 503: HTTPStatusError calls= 1 remaining= 1
+transient timeout: ReadTimeout calls= 1 remaining= 1
+incomplete bundle accepted: {'paris': '', 'berlin': ''}
+
+
+=== cli_probe.py: exit 0 ===
+synthetic authentication rejection
+saved_true_defaults effective bools {'embed_art': False, 'ignore_singles_eps': False, 'no_m3u_for_playlists': False, 'quality_fallback': True, 'cover_og_quality': False, 'no_cover': False, 'smart_discography': False} db /var/folders/n1/sj2f0djj3yxbv2s8qk_z9knm0000gp/T/qobuz-cli-audit-zjcehb9i/db exit 0
+auth_failure_exit 0
+invalid_boolean ValueError Not a boolean: maybe
+malformed_ini MissingSectionHeaderError
+config_bytes_after_failed_save 0
+subcommand_help_calls_bootstrap 1 exit 0
+new_config_mode 0o644
+show_config_exposes_synthetic_token True
+root_show_config_without_subcommand 2 Error: Missing command.
+unrelated_hidden_tmp_survives False
+
+
+=== quality_probe.py: exit 0 ===
+per_track_no_fallback_downgraded_calls ['downloaded']
+
+
+=== browser_probe.py: exit 0 ===
+Third-party HTTP500 response accepted: synthetic-untrusted-token
+
+
+=== collection_benchmark.py: exit 0 ===
+Downloading all the music from Synthetic (playlist)!
+8 downloads in queue
+limit=8 completed=8 peak_active=1 elapsed_seconds=0.168
+
+
+=== stream_benchmark.py: exit 0 ===
+8KiB real Rich median_seconds= 0.02026 MiB/s= 3158.5
+8KiB no progress median_seconds= 0.0161 MiB/s= 3975.7
+256KiB real Rich median_seconds= 0.01095 MiB/s= 5846.9
